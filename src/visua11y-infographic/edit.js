@@ -20,25 +20,38 @@ import {
 	ToolbarItem,
 	SelectControl
 } from '@wordpress/components';
+import { dispatch, useSelect } from '@wordpress/data';
+import { createBlock } from '@wordpress/blocks';
 import './editor.scss';
 
 export default function Edit( { clientId, attributes, setAttributes } ) {
 
+	// props
 	const { media, generatedHTML } = attributes;
+
+	// states
 	const [ isLoading, setIsLoading ] = useState( false );
 	const [ blockTemplate, setBlockTemplate ] = useState( null );
-	const [ alternativeType, setAlternativeType ] = useState( 'table-and-description' );
+	// const [ alternativeType, setAlternativeType ] = useState( 'table-and-description' );
 
-	const { replaceInnerBlocks } = wp.data.dispatch("core/block-editor");
-	const { innerBlocks } = wp.data.useSelect(select => ({
-		innerBlocks: select("core/block-editor").getBlocks(clientId)
-	}));
+	// hooks
+	const { replaceInnerBlocks } = dispatch( "core/block-editor" );
+	const { innerBlocks } = useSelect( select => ( {
+		innerBlocks: select( "core/block-editor" ).getBlocks( clientId )
+	} ) );
 
+	/**
+	 * Remove all inner blocks from the block
+	 */
 	const removeInnerBlocks = () => {
 		setBlockTemplate( null );
 		replaceInnerBlocks( clientId, [] );
 	};
 
+	/**
+	 * Handle the selection of a media item
+	 * @param {Object} selectedMedia
+	 */
 	const onSelectMedia = ( selectedMedia ) => {
 		removeInnerBlocks();
 		setAttributes( {
@@ -49,35 +62,52 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 		} );
 	};
 
+	/**
+	 * Remove the media from the block and reset the generated HTML
+	 */
 	const onRemoveMedia = () => {
 		removeInnerBlocks();
 		setAttributes( { media: {}, generatedHTML: null } );
 	};
 
+	/**
+	 * Generate the HTML for the accessible alternative using the API.
+	 * 
+	 * @param {Object} args
+	 * @param {string} args.imageURL
+	 * @param {string} args.alternativeType
+	 * @returns 
+	 */
 	const generateHTML = async ( args ) => {
+
+		// prepare the block for the new content
 		setIsLoading( true );
 		setAttributes( { generatedHTML: null } );
 		removeInnerBlocks();
 
-		console.log( 'Generating HTML for:', media );
-
-		const requestBody = {
-			image: media.url,
-			response_type: 'html'
-		};
+		const {
+			imageURL,
+			// alternativeType
+		} = args;
 
 		try {
 			const response = await fetch( 'https://wordpress-1111654-5343094.cloudwaysapps.com/wp-json/accessible-infographic/v1/analyze/', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					/**
+					 * @todo this leads to a CORS error on most sites
+					 * @todo we need to find a way to make this work
+					 */
 					// 'X-API-Key': 'v11y_api_7f3d8b2e4a6c9f1d5e0b7a2c4d6e8f0a'
 				},
-				body: JSON.stringify( requestBody )
+				body: JSON.stringify( {
+					image: imageURL,
+					response_type: 'html'
+				} )
 			} );
 
 			if ( !response.ok ) {
-				// throw new Error( 'Network response was not ok' );
 				showSnackbar( __( 'Network response was not ok', 'visua11y-infographic' ), {
 					style: 'error',
 					isDismissible: true,
@@ -101,13 +131,13 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 			}
 
 			let newHtml = '';
-			if ( args.alternativeType === 'table-and-description' ) {
+			// if ( args.alternativeType === 'table-and-description' ) {
 				newHtml = data.summary + data.values;
-			} else if ( args.alternativeType === 'description' ) {
-				newHtml = data.summary;
-			} else if ( args.alternativeType === 'table' ) {
-				newHtml = data.values;
-			}
+			// } else if ( args.alternativeType === 'description' ) {
+			// 	newHtml = data.summary;
+			// } else if ( args.alternativeType === 'table' ) {
+			// 	newHtml = data.values;
+			// }
 
 			setAttributes( { generatedHTML: newHtml } );
 			const blocks = rawHandler( { HTML: generatedHTML } );
@@ -134,21 +164,25 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 	};
 
 	/**
-	 * @note This is not working, as the template is not valid for the createBlock function
+	 * Insert the generated blocks into the editor and remove this block
 	 */
 	const insertBlocks = () => {
 
-		const imageBlock = wp.blocks.createBlock( 'core/image', media );
-		const detailsBlock = wp.blocks.createBlock( 'core/details', {
+		// create the blocks
+		const imageBlock = createBlock( 'core/image', media );
+		const detailsBlock = createBlock( 'core/details', {
 			summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' )
 		}, innerBlocks );
-		const wrappedInnerBlocks = wp.blocks.createBlock( 'core/group', {}, [
+		const wrappedInnerBlocks = createBlock( 'core/group', {}, [
 			imageBlock,
 			detailsBlock
 		] );
 
-		// insert the new block
-		wp.data.dispatch( 'core/editor' ).insertBlocks( wrappedInnerBlocks );
+		// insert the blocks
+		dispatch( 'core/editor' ).insertBlocks( wrappedInnerBlocks );
+
+		// remove this block
+		dispatch( 'core/block-editor' ).removeBlocks( [ clientId ] );
 	};
 
 	return (
@@ -211,7 +245,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 						{/* Image is displayed as background */}
 					</div>
 				)}
-				<SelectControl
+				{/* <SelectControl
 					label={__( 'Type of alternative', 'visua11y-infographic' )}
 					value={alternativeType}
 					options={[
@@ -221,9 +255,12 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 					]}
 					onChange={( value ) => setAlternativeType( value )}
 					help={__( 'What kind of format should the alternative have', 'visua11y-infographic' )}
-				/>
+				/> */}
 				<Button
-					onClick={() => generateHTML( { alternativeType: alternativeType } )}
+					onClick={() => generateHTML( {
+						imageURL: media.url,
+						// alternativeType: alternativeType
+					} )}
 					variant="secondary"
 					className={isLoading ? 'large-button is-busy' : 'large-button'}
 					disabled={!media || Object.keys( media ).length === 0}
