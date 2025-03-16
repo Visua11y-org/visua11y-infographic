@@ -3,7 +3,7 @@ import { useBlockProps, BlockControls, InnerBlocks } from '@wordpress/block-edit
 import { useState, useEffect } from '@wordpress/element';
 import { rawHandler } from '@wordpress/blocks';
 import { getMarkup } from './lib/getMarkup';
-import { blocksToTemplate, innerBlocksToTemplate } from './lib/blocksToTemplate';
+import { blocksToTemplate } from './lib/blocksToTemplate';
 import {
 	MediaUpload,
 	MediaUploadCheck
@@ -19,7 +19,6 @@ import {
 	ToolbarItem,
 	SelectControl
 } from '@wordpress/components';
-import { edit, trash } from '@wordpress/icons';
 import './editor.scss';
 
 export default function Edit( { attributes, setAttributes } ) {
@@ -84,6 +83,24 @@ export default function Edit( { attributes, setAttributes } ) {
 			setIsLoading(false);
 		}
 	};
+
+	/**
+	 * @note This is not working, as the template is not valid for the createBlock function
+	 */
+	const insertBlocks = () => {
+		const template = [
+			[ 'core/group', {}, [
+				[ 'core/image', media ],
+				[ 'core/details', {}, [
+					...blockTemplate
+				]]
+			]]
+		];
+		// create a new block with the template
+		const newBlock = wp.blocks.createBlock( 'core/group', {}, template );
+		// insert the new block
+		wp.data.dispatch( 'core/editor' ).insertBlocks( newBlock );
+	}
 
 	return (
 		<div {...useBlockProps()}>
@@ -177,6 +194,15 @@ export default function Edit( { attributes, setAttributes } ) {
 					// 	<div dangerouslySetInnerHTML={{ __html: blockTemplate }} />
 					// </div>
 					<InnerBlocks template={blockTemplate} />
+				)}
+				{blockTemplate && (
+					<Button
+						onClick={() => insertBlocks(blockTemplate)}
+						variant="primary"
+						className="large-button"
+					>
+						{__( 'Insert Accessible Alternative', 'visua11y-infographic' )}
+					</Button>
 				)}
 			</Placeholder>
 		</div>

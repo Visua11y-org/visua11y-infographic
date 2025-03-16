@@ -1,8 +1,8 @@
-export const innerBlocksToTemplate = (innerBlocks) => {
+const innerBlocksToTemplate = (innerBlocks) => {
 	return innerBlocks.map(block => [
 		block.name,
 		{ ...block.attributes },
-		block.innerBlocks ? convertInnerBlocksToTemplate(block.innerBlocks) : []
+		block.innerBlocks ? innerBlocksToTemplate(block.innerBlocks) : []
 	]);
 };
 
