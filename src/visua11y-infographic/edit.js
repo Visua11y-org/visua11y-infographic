@@ -18,7 +18,6 @@ import {
 	ToolbarButton,
 	ToolbarItem
 } from '@wordpress/components';
-import { edit, trash } from '@wordpress/icons';
 import './editor.scss';
 
 export default function Edit( { attributes, setAttributes } ) {
@@ -27,7 +26,14 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [tableHTML, setTableHTML] = useState('');
 	const blocks = rawHandler({ HTML: getMarkup() })
-	const blocksTemplate = blocksToTemplate(blocks);
+	const blocksTemplate = [
+    [ 'core/group', {}, [
+        [ 'core/image', media ],
+        [ 'core/details', {}, [
+					...blocksToTemplate(blocks)
+        ]]
+    ]]
+];
 
 	const onSelectMedia = ( selectedMedia ) => {
 		setAttributes( { media: selectedMedia } );
@@ -103,11 +109,8 @@ export default function Edit( { attributes, setAttributes } ) {
 						</MediaUploadCheck>
 					</div>
 				) : (
-					<div className="media-container" style={{ backgroundImage: `url(${ media.url })` }}>
-						{/* Image is displayed as background */}
-					</div>
+					<InnerBlocks template={blocksTemplate} />
 				)}
-				<InnerBlocks template={blocksTemplate} />
 				<Button
 					onClick={() => setIsModalOpen(true)}
 					variant="primary"
@@ -139,7 +142,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							</div>
 							<div className="modal-bottom-bar">
 								<Button onClick={() => setIsModalOpen( false )} variant="primary" disabled>
-									{__( 'Save', 'visua11y-infographic' )}
+									{__( 'Generate Blocks', 'visua11y-infographic' )}
 								</Button>
 							</div>
 						</div>

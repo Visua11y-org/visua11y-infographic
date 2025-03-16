@@ -1,4 +1,4 @@
-export const innerBlocksToTemplate = (innerBlocks) => {
+const innerBlocksToTemplate = (innerBlocks) => {
 	return innerBlocks.map(block => [
 		block.name,
 		{ ...block.attributes },
