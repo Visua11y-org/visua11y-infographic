@@ -1,0 +1,24 @@
+{
+	"name": "visua11y-infographic",
+	"version": "0.1.0",
+	"description": "A Infographic that lets you create accessible infographics from simply uploading an image.",
+	"author": "Visua11y Cloudfest 2025 Hackathon team members",
+	"license": "GPL-2.0-or-later",
+	"main": "build/index.js",
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"packages-update": "wp-scripts packages-update",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"build-manifest": "wp-scripts"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.13.0"
+	},
+	"dependencies": {
+		"@wordpress/icons": "^10.20.0"
+	}
+}

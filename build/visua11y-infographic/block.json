@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "visua11y/visua11y-infographic",
+  "version": "0.1.0",
+  "title": "Visua11y Infographic",
+  "category": "media",
+  "icon": "chart-pie",
+  "description": "A Infographic that lets you create accessible infographics from simply uploading an image.",
+  "example": {},
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "media": {
+      "type": "object",
+      "default": {}
+    },
+    "generatedHTML": {
+      "type": "string",
+      "default": null
+    }
+  },
+  "textdomain": "visua11y-infographic",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js"
+}
