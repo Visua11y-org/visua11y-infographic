@@ -16,16 +16,17 @@ import {
 	chartBar,
 	ToolbarGroup,
 	ToolbarButton,
-	ToolbarItem
+	ToolbarItem,
+	SelectControl
 } from '@wordpress/components';
 import { edit, trash } from '@wordpress/icons';
 import './editor.scss';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { media, generatedHTML } = attributes;
-	const [ isModalOpen, setIsModalOpen ] = useState( false );
-	const [isLoading, setIsLoading] = useState(false);
-	const [tableHTML, setTableHTML] = useState('');
+	const [ isLoading, setIsLoading ] = useState(false);
+	const [ temporaryHTML, setTemporaryHTML ] = useState(null);
+	const [ alternativeType, setAlternativeType ] = useState('table-and-description');
 	const blocks = rawHandler({ HTML: getMarkup() })
 	const blocksTemplate = blocksToTemplate(blocks);
 
@@ -37,15 +38,17 @@ export default function Edit( { attributes, setAttributes } ) {
 		setAttributes( { media: {}, generatedHTML: null } );
 	};
 
-	useEffect(() => {
-		if (isModalOpen) {
-			setIsLoading(true);
-			setTimeout(() => {
-				setTableHTML(getMarkup());
-				setIsLoading(false);
-			}, 2000);
-		}
-	}, [isModalOpen]);
+	const generateHTML = ( args ) => {
+		setTemporaryHTML(null);
+		setIsLoading(true);
+		setTimeout(() => {
+			/**
+			 * @todo use alternativeType to generate the HTML
+			 */
+			setTemporaryHTML(getMarkup());
+			setIsLoading(false);
+		}, 2000);
+	};
 
 	return (
 		<div {...useBlockProps()}>
@@ -107,44 +110,40 @@ export default function Edit( { attributes, setAttributes } ) {
 						{/* Image is displayed as background */}
 					</div>
 				)}
-				<InnerBlocks template={blocksTemplate} />
+				<SelectControl
+					label={__('Type of alternative', 'visua11y-infographic')}
+					value={alternativeType}
+					options={[
+						{ label: __('Table and Description', 'visua11y-infographic'), value: 'table-and-description' },
+						{ label: __('Just description', 'visua11y-infographic'), value: 'description' },
+						{ label: __('Just table', 'visua11y-infographic'), value: 'table' },
+					]}
+					onChange={(value) => setAlternativeType(value)}
+					help={__('What kind of format should the alternative have', 'visua11y-infographic')}
+				/>
 				<Button
-					onClick={() => setIsModalOpen(true)}
-					variant="primary"
-					className="large-button"
+					onClick={() => generateHTML({ alternativeType: alternativeType })}
+					variant="secondary"
+					className={isLoading ? 'large-button is-busy' : 'large-button'}
 					disabled={!media || Object.keys(media).length === 0}
 				>
-					{__( 'Create Accessible Alternative', 'visua11y-infographic' )}
+					{(
+						temporaryHTML
+						? __( 'Regenerate', 'visua11y-infographic' )
+						: (
+							isLoading
+							? __( 'Generating...', 'visua11y-infographic' )
+							: __( 'Generate Accessible Alternative', 'visua11y-infographic' )
+						)
+					)}
 				</Button>
+				{temporaryHTML && (
+					// <div className="output-container">
+					// 	<div dangerouslySetInnerHTML={{ __html: temporaryHTML }} />
+					// </div>
+					<InnerBlocks template={blocksTemplate} />
+				)}
 			</Placeholder>
-
-			{isModalOpen && (
-				<Modal
-					title={__( 'Create an accessible alternative', 'visua11y-infographic' )}
-					onRequestClose={() => setIsModalOpen( false )}
-					shouldCloseOnEsc={true}
-					shouldCloseOnClickOutside={true}
-					className="is-fullscreen"
-				>
-						<div className="modal-content-wrapper">
-							<div className="modal-left-side">
-								<img src={media.url} alt={__( 'Selected Media', 'visua11y-infographic' )} style={{ maxWidth: '100%', maxHeight: '500px' }} />
-							</div>
-							<div className="modal-right-side">
-								{isLoading ? (
-									<div className="loader">Loading...</div>
-								) : (
-									<pre>{tableHTML}</pre>
-								)}
-							</div>
-							<div className="modal-bottom-bar">
-								<Button onClick={() => setIsModalOpen( false )} variant="primary" disabled>
-									{__( 'Save', 'visua11y-infographic' )}
-								</Button>
-							</div>
-						</div>
-				</Modal>
-			)}
 		</div>
 	);
 }
