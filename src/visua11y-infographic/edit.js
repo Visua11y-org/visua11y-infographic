@@ -24,6 +24,7 @@ import { dispatch, useSelect } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
 import { isEmpty } from 'lodash';
 import LabeledSeparator from './LabeledSeparator';
+import generateAnchor from './lib/generateAnchor';
 import './editor.scss';
 
 export default function Edit( { clientId, attributes, setAttributes } ) {
@@ -147,15 +148,15 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 			// generate html
 			let generatedHTML = '';
 			if ( summary ) {
-				generatedHTML += `<h3>${ __( 'Summary', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += `<h3 id="${summaryAnchor}">${ __( 'Summary', 'visua11y-infographic' ) }</h3>`;
 				generatedHTML += summary;
 			}
 			if ( values ) {
-				generatedHTML += `<h3>${ __( 'Values', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += `<h3 id="${valuesAnchor}">${ __( 'Values', 'visua11y-infographic' ) }</h3>`;
 				generatedHTML += values;
 			}
 			if ( context ) {
-				generatedHTML += `<h3>${ __( 'Context', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += `<h3 id="${contextAnchor}">${ __( 'Context', 'visua11y-infographic' ) }</h3>`;
 				generatedHTML += context;
 			}
 
@@ -188,12 +189,17 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 	 * Insert the generated blocks into the editor and remove this block
 	 */
 	const insertBlocks = ( inner, options ) => {
+
 		const { includeImage, includeSummary, includeDataTable, includeContext } = options;
+		const anchor = generateAnchor();
 
 		// create the blocks
 		const blocks = [];
 		if (includeImage) {
-			blocks.push(createBlock( 'core/image', media ));
+			blocks.push(createBlock( 'core/image', {
+				...media,
+				ariaDescribedby: anchor
+			}));
 		}
 		const detailsInnerBlocks = [];
 		if (includeSummary) {
@@ -212,20 +218,34 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 		let wrappedInnerBlocks;
 		if (outputFormat === 'details-below-image') {
 			const detailsBlock = createBlock( 'core/details', {
-				summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' )
-			}, detailsInnerBlocks );
+				summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' ),
+			}, [
+				createBlock( 'core/group', {
+					anchor: anchor
+				}, detailsInnerBlocks)
+			] );
 			blocks.push(detailsBlock);
 			wrappedInnerBlocks = createBlock( 'core/group', {}, blocks );
-		} else if (outputFormat === 'directly-below-image') {
-			wrappedInnerBlocks = createBlock( 'core/group', {}, [...blocks, ...detailsInnerBlocks] );
-		} else if (outputFormat === 'next-to-image') {
-			const columnsBlock = createBlock( 'core/columns', {}, [
-				createBlock( 'core/column', {}, blocks ),
-				createBlock( 'core/column', {}, detailsInnerBlocks )
+		}
+		else if (outputFormat === 'directly-below-image') {
+			wrappedInnerBlocks = createBlock( 'core/group', {}, [
+				...blocks,
+				createBlock( 'core/group', {
+					anchor: anchor
+				}, detailsInnerBlocks)
 			] );
-			wrappedInnerBlocks = createBlock( 'core/group', {
+		}
+		else if (outputFormat === 'next-to-image') {
+			wrappedInnerBlocks = createBlock( 'core/columns', {
 				align: 'wide'
-			}, [columnsBlock] );
+			}, [
+				createBlock( 'core/column', {}, blocks ),
+				createBlock( 'core/column', {}, [
+					createBlock( 'core/group', {
+						anchor: anchor
+					}, detailsInnerBlocks)
+				] )
+			] );
 		}
 
 		// remove this block
