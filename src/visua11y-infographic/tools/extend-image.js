@@ -2,9 +2,9 @@ import { __, _n } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import { PanelBody, FormTokenField, Button } from '@wordpress/components';
+import { Button, FormTokenField, PanelBody } from '@wordpress/components';
 import { Fragment, useState } from '@wordpress/element';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 // 1️⃣ Add custom attribute to the core/image block
 const addAriaDescribedbyAttribute = ( settings, name ) => {
@@ -87,6 +87,12 @@ const withAriaDescribedbyControl = createHigherOrderComponent(
 					<BlockEdit { ...props } />
 					<InspectorControls>
 						<PanelBody title="Accessibility">
+							<p className="components-tip">
+							{ __(
+								'If this is an complex image, it should be "described" by another element on this page, like some paragraph, table, list, etc. You can select from available "HTML anchor" values, or add new values.',
+								'visua11y-infographic'
+							) }
+							</p>
 							{ isEditing ? (
 								<div>
 									<FormTokenField
@@ -110,9 +116,8 @@ const withAriaDescribedbyControl = createHigherOrderComponent(
 									<Button
 										variant="primary"
 										onClick={ handleSave }
-										style={ { marginTop: '8px' } }
 									>
-										Save
+										{ __( 'Save', 'visua11y-infographic' ) }
 									</Button>
 								</div>
 							) : (
@@ -124,35 +129,37 @@ const withAriaDescribedbyControl = createHigherOrderComponent(
 											tokens.length,
 											'visua11y-infographic'
 										) + '  ' }
-										{ tokens.map( ( token, index ) => (
-											<Fragment key={ index }>
-												<a
-													href={ `#${ token }` }
-													onClick={ ( e ) => {
-														e.preventDefault();
-														handleAnchorClick(
-															token
-														);
-													} }
-													style={ {
-														cursor: 'pointer',
-														color: '#0073aa',
-													} }
-												>
-													#{ token }
-												</a>
-												{ index < tokens.length - 1
-													? ', '
-													: '' }
-											</Fragment>
-										) ) }
+										{ tokens.length ?
+											tokens.map( ( token, index ) => (
+												<Fragment key={ index }>
+													<a
+														href={ `#${ token }` }
+														onClick={ ( e ) => {
+															e.preventDefault();
+															handleAnchorClick(
+																token
+															);
+														} }
+														style={ {
+															cursor: 'pointer',
+															color: '#0073aa',
+														} }
+													>
+														#{ token }
+													</a>
+													{ index < tokens.length - 1
+														? ', '
+														: '' }
+												</Fragment>
+											) ) :
+											__( 'none', 'visua11y-infographic' )
+										}
 									</p>
 									<Button
 										variant="secondary"
 										onClick={ () => setIsEditing( true ) }
-										style={ { marginTop: '8px' } }
 									>
-										Edit
+										{ __( 'Edit', 'visua11y-infographic' ) }
 									</Button>
 								</div>
 							) }
