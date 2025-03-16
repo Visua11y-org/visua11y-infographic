@@ -16,9 +16,9 @@
 			"type": "object",
 			"default": {}
 		},
-		"generatedHTML": {
-			"type": "string",
-			"default": null
+		"generatedData": {
+			"type": "object",
+			"default": {}
 		}
 	},
 	"textdomain": "visua11y-infographic",

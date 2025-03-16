@@ -1,0 +1,20 @@
+.labeled-separator {
+	display: flex;
+	align-items: center;
+	text-align: center;
+	margin: 1em 0 0;
+	width: 100%;
+
+	& > hr {
+		flex: 1;
+		border: none;
+		border-top: 1px solid #ccc;
+		margin: 0;
+	}
+
+	& > span {
+		white-space: nowrap;
+		color: #666;
+		padding: 0 1em;
+	}
+}

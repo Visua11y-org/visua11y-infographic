@@ -2,7 +2,6 @@ import { __ } from '@wordpress/i18n';
 import { useBlockProps, BlockControls, InnerBlocks } from '@wordpress/block-editor';
 import { useState, useEffect } from '@wordpress/element';
 import { rawHandler } from '@wordpress/blocks';
-import { getMarkup } from './lib/getMarkup';
 import { showSnackbar } from './lib/showSnackbar';
 import { blocksToTemplate } from './lib/blocksToTemplate';
 import {
@@ -18,27 +17,36 @@ import {
 	ToolbarGroup,
 	ToolbarButton,
 	ToolbarItem,
-	SelectControl
+	SelectControl,
+	CheckboxControl
 } from '@wordpress/components';
 import { dispatch, useSelect } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
+import { isEmpty } from 'lodash';
+import LabeledSeparator from './LabeledSeparator';
 import './editor.scss';
 
 export default function Edit( { clientId, attributes, setAttributes } ) {
 
 	// props
-	const { media, generatedHTML } = attributes;
+	const { media, generatedData } = attributes;
 
 	// states
 	const [ isLoading, setIsLoading ] = useState( false );
 	const [ blockTemplate, setBlockTemplate ] = useState( null );
 	// const [ alternativeType, setAlternativeType ] = useState( 'table-and-description' );
+	const [ includeImage, setIncludeImage ] = useState( true );
+	const [ includeSummary, setIncludeSummary ] = useState( true );
+	const [ includeDataTable, setIncludeDataTable ] = useState( true );
+	const [ includeContext, setIncludeContext ] = useState( true );
+	const [ outputFormat, setOutputFormat ] = useState( 'details-below-image' );
 
 	// hooks
 	const { replaceInnerBlocks } = dispatch( "core/block-editor" );
 	const { innerBlocks } = useSelect( select => ( {
 		innerBlocks: select( "core/block-editor" ).getBlocks( clientId )
 	} ) );
+	const hasInnerBlocks = ! isEmpty( innerBlocks );
 
 	/**
 	 * Remove all inner blocks from the block
@@ -67,7 +75,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 	 */
 	const onRemoveMedia = () => {
 		removeInnerBlocks();
-		setAttributes( { media: {}, generatedHTML: null } );
+		setAttributes( { media: {}, generatedData: null } );
 	};
 
 	/**
@@ -82,7 +90,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 
 		// prepare the block for the new content
 		setIsLoading( true );
-		setAttributes( { generatedHTML: null } );
+		setAttributes( { generatedData: null } );
 		removeInnerBlocks();
 
 		const {
@@ -130,19 +138,32 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 				}
 			}
 
-			let newHtml = '';
-			// if ( args.alternativeType === 'table-and-description' ) {
-				newHtml = data.summary + data.values;
-			// } else if ( args.alternativeType === 'description' ) {
-			// 	newHtml = data.summary;
-			// } else if ( args.alternativeType === 'table' ) {
-			// 	newHtml = data.values;
-			// }
+			// save the generated HTML to the block
+			setAttributes( { generatedData: data } );
 
-			setAttributes( { generatedHTML: newHtml } );
-			const blocks = rawHandler( { HTML: generatedHTML } );
-			const template = blocksToTemplate( blocks );
-			setBlockTemplate( template );
+			// process the data
+			const { summary, values, context } = data;
+
+			// generate html
+			let generatedHTML = '';
+			if ( summary ) {
+				generatedHTML += `<h3>${ __( 'Summary', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += summary;
+			}
+			if ( values ) {
+				generatedHTML += `<h3>${ __( 'Values', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += values;
+			}
+			if ( context ) {
+				generatedHTML += `<h3>${ __( 'Context', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += context;
+			}
+
+			setBlockTemplate(
+				blocksToTemplate(
+					rawHandler( { HTML: generatedHTML } )
+				)
+			);
 			showSnackbar(
 				__( 'Generated Accessible Alternative', 'visua11y-infographic' ),
 				{
@@ -166,23 +187,52 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 	/**
 	 * Insert the generated blocks into the editor and remove this block
 	 */
-	const insertBlocks = () => {
+	const insertBlocks = ( inner, options ) => {
+		const { includeImage, includeSummary, includeDataTable, includeContext } = options;
 
 		// create the blocks
-		const imageBlock = createBlock( 'core/image', media );
-		const detailsBlock = createBlock( 'core/details', {
-			summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' )
-		}, innerBlocks );
-		const wrappedInnerBlocks = createBlock( 'core/group', {}, [
-			imageBlock,
-			detailsBlock
-		] );
+		const blocks = [];
+		if (includeImage) {
+			blocks.push(createBlock( 'core/image', media ));
+		}
+		const detailsInnerBlocks = [];
+		if (includeSummary) {
+			if (innerBlocks[0]) detailsInnerBlocks.push(innerBlocks[0]);
+			if (innerBlocks[1]) detailsInnerBlocks.push(innerBlocks[1]);
+		}
+		if (includeDataTable) {
+			if (innerBlocks[2]) detailsInnerBlocks.push(innerBlocks[2]);
+			if (innerBlocks[3]) detailsInnerBlocks.push(innerBlocks[3]);
+		}
+		if (includeContext) {
+			if (innerBlocks[4]) detailsInnerBlocks.push(innerBlocks[4]);
+			if (innerBlocks[5]) detailsInnerBlocks.push(innerBlocks[5]);
+		}
 
-		// insert the blocks
-		dispatch( 'core/editor' ).insertBlocks( wrappedInnerBlocks );
+		let wrappedInnerBlocks;
+		if (outputFormat === 'details-below-image') {
+			const detailsBlock = createBlock( 'core/details', {
+				summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' )
+			}, detailsInnerBlocks );
+			blocks.push(detailsBlock);
+			wrappedInnerBlocks = createBlock( 'core/group', {}, blocks );
+		} else if (outputFormat === 'directly-below-image') {
+			wrappedInnerBlocks = createBlock( 'core/group', {}, [...blocks, ...detailsInnerBlocks] );
+		} else if (outputFormat === 'next-to-image') {
+			const columnsBlock = createBlock( 'core/columns', {}, [
+				createBlock( 'core/column', {}, blocks ),
+				createBlock( 'core/column', {}, detailsInnerBlocks )
+			] );
+			wrappedInnerBlocks = createBlock( 'core/group', {
+				align: 'wide'
+			}, [columnsBlock] );
+		}
 
 		// remove this block
 		dispatch( 'core/block-editor' ).removeBlocks( [ clientId ] );
+
+		// insert the blocks
+		dispatch( 'core/editor' ).insertBlocks( wrappedInnerBlocks );
 	};
 
 	return (
@@ -206,7 +256,6 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 									)}
 								</ToolbarItem>
 							)}
-							onSelect={onSelectMedia}
 						/>
 					</MediaUploadCheck>
 					{media && Object.keys( media ).length !== 0 && (
@@ -245,17 +294,6 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 						{/* Image is displayed as background */}
 					</div>
 				)}
-				{/* <SelectControl
-					label={__( 'Type of alternative', 'visua11y-infographic' )}
-					value={alternativeType}
-					options={[
-						{ label: __( 'Table and Description', 'visua11y-infographic' ), value: 'table-and-description' },
-						{ label: __( 'Just description', 'visua11y-infographic' ), value: 'description' },
-						{ label: __( 'Just table', 'visua11y-infographic' ), value: 'table' },
-					]}
-					onChange={( value ) => setAlternativeType( value )}
-					help={__( 'What kind of format should the alternative have', 'visua11y-infographic' )}
-				/> */}
 				<Button
 					onClick={() => generateHTML( {
 						imageURL: media.url,
@@ -266,7 +304,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 					disabled={!media || Object.keys( media ).length === 0}
 				>
 					{(
-						generatedHTML
+						!isEmpty(generatedData)
 							? __( 'Regenerate', 'visua11y-infographic' )
 							: (
 								isLoading
@@ -275,20 +313,54 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 							)
 					)}
 				</Button>
-				{generatedHTML && (
-					// <div className="output-container">
-					// 	<div dangerouslySetInnerHTML={{ __html: blockTemplate }} />
-					// </div>
-					<InnerBlocks template={blockTemplate} />
-				)}
-				{generatedHTML && (
-					<Button
-						onClick={() => insertBlocks( blockTemplate )}
-						variant="primary"
-						className="large-button"
-					>
-						{__( 'Insert Accessible Alternative', 'visua11y-infographic' )}
-					</Button>
+				{!isEmpty(generatedData) && (
+					<>
+						<LabeledSeparator label={__( 'Generated Alternative', 'visua11y-infographic' )} />
+						<InnerBlocks template={blockTemplate} />
+						<LabeledSeparator label={__( 'Insert', 'visua11y-infographic' )} />
+						
+						<CheckboxControl
+							label={__( 'Image', 'visua11y-infographic' )}
+							title={__( 'Include Image', 'visua11y-infographic' )}
+							checked={includeImage}
+							onChange={setIncludeImage}
+						/>
+						<CheckboxControl
+							label={__( 'Summary', 'visua11y-infographic' )}
+							title={__( 'Include Summary', 'visua11y-infographic' )}
+							checked={includeSummary}
+							onChange={setIncludeSummary}
+						/>
+						<CheckboxControl
+							label={__( 'Data Table', 'visua11y-infographic' )}
+							title={__( 'Include Data Table', 'visua11y-infographic' )}
+							checked={includeDataTable}
+							onChange={setIncludeDataTable}
+						/>
+						<CheckboxControl
+							label={__( 'Context', 'visua11y-infographic' )}
+							title={__( 'Include Context', 'visua11y-infographic' )}
+							checked={includeContext}
+							onChange={setIncludeContext}
+						/>
+						<SelectControl
+							label={__( 'Output Format', 'visua11y-infographic' )}
+							value={outputFormat}
+							options={[
+								{ label: __( 'Alternative inside details below the image', 'visua11y-infographic' ), value: 'details-below-image' },
+								{ label: __( 'Alternative directly below image', 'visua11y-infographic' ), value: 'directly-below-image' },
+								{ label: __( 'Alternative next to the image', 'visua11y-infographic' ), value: 'next-to-image' }
+							]}
+							onChange={setOutputFormat}
+						/>
+						<Button
+							onClick={() => insertBlocks( innerBlocks, { includeImage, includeSummary, includeDataTable, includeContext } )}
+							variant="primary"
+							className="large-button"
+						>
+							{__( 'Insert as Blocks', 'visua11y-infographic' )}
+						</Button>
+					</>
 				)}
 			</Placeholder>
 		</div>
