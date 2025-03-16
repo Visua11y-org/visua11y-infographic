@@ -1,8 +1,10 @@
+import { __, _n } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
-import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorControls } from '@wordpress/block-editor';
-import { TextControl, PanelBody } from '@wordpress/components';
-import { Fragment } from '@wordpress/element';
+import { createHigherOrderComponent } from '@wordpress/compose';
+import { PanelBody, FormTokenField, Button } from '@wordpress/components';
+import { Fragment, useState } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
 
 // 1️⃣ Add custom attribute to the core/image block
 const addAriaDescribedbyAttribute = (settings, name) => {
@@ -35,20 +37,90 @@ const withAriaDescribedbyControl = createHigherOrderComponent((BlockEdit) => {
 			return <BlockEdit {...props} />;
 		}
 
-		const { attributes, setAttributes } = props;
+		const { attributes, setAttributes, clientId } = props;
 		const { ariaDescribedby } = attributes;
+		const [tokens, setTokens] = useState(ariaDescribedby ? ariaDescribedby.split(' ') : []);
+		const [isEditing, setIsEditing] = useState(!ariaDescribedby); // Show input if empty
+		const { selectBlock } = useDispatch('core/block-editor');
+
+		// Get all blocks and extract their "anchor" attributes using useSelect
+		const allAnchors = useSelect((select) => {
+			const blocks = select('core/block-editor').getBlocks();
+			return blocks
+				.map(block => ({ anchor: block.attributes?.anchor, id: block.clientId }))
+				.filter(item => item.anchor); // Remove empty anchors
+		}, []);
+
+		const handleSave = () => {
+			setAttributes({ ariaDescribedby: tokens.join(' ') });
+			setIsEditing(false);
+		};
+
+		const handleAnchorClick = (anchor) => {
+			// Select the block with the matching anchor using useSelect
+			const blockToSelect = allAnchors.find(block => block.anchor === anchor);
+			if (blockToSelect) {
+				selectBlock(blockToSelect.id);
+				// Optional: Scroll the block into view
+				const blockElement = document.querySelector(`#${blockToSelect.id}`);
+				if (blockElement) {
+					blockElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}
+			}
+		};
 
 		return (
 			<Fragment>
 				<BlockEdit {...props} />
 				<InspectorControls>
 					<PanelBody title="Accessibility">
-						<TextControl
-							label="Aria Describedby"
-							value={ariaDescribedby}
-							onChange={(value) => setAttributes({ ariaDescribedby: value })}
-							help="Enter the ID of the element describing this image."
-						/>
+						{isEditing ? (
+							<div>
+								<FormTokenField
+									label={__( 'Element Described By', 'visua11y-infographic' )}
+									value={tokens}
+									suggestions={allAnchors.map(item => item.anchor)} // Suggest existing anchors
+									onChange={(newTokens) => setTokens(newTokens)}
+									__experimentalExpandOnFocus
+									help={ __( 'Enter one or more "HTML anchor" values, separated by spaces.', 'visua11y-infographic' ) }
+								/>
+								<Button
+									variant="primary"
+									onClick={handleSave}
+									style={{ marginTop: '8px' }}
+								>
+									Save
+								</Button>
+							</div>
+						) : (
+							<div>
+								<p>
+									{ _n( 'Describing element:', 'Describing elements:', tokens.length, 'visua11y-infographic' ) + '  ' }
+									{tokens.map((token, index) => (
+										<Fragment key={index}>
+											<a
+												href={`#${token}`}
+												onClick={(e) => {
+													e.preventDefault();
+													handleAnchorClick(token);
+												}}
+												style={{ cursor: 'pointer', color: '#0073aa' }}
+											>
+												#{token}
+											</a>
+											{index < tokens.length - 1 ? ', ' : ''}
+										</Fragment>
+									))}
+								</p>
+								<Button
+									variant="secondary"
+									onClick={() => setIsEditing(true)}
+									style={{ marginTop: '8px' }}
+								>
+									Edit
+								</Button>
+							</div>
+						)}
 					</PanelBody>
 				</InspectorControls>
 			</Fragment>
