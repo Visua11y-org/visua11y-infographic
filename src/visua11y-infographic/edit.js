@@ -20,9 +20,8 @@ import './editor.scss';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { media, generatedHTML } = attributes;
-	const [ isModalOpen, setIsModalOpen ] = useState( false );
-	const [isLoading, setIsLoading] = useState(false);
-	const [tableHTML, setTableHTML] = useState('');
+	const [ isLoading, setIsLoading ] = useState(false);
+	const [ temporaryHTML, setTemporaryHTML ] = useState(null);
 
 	const onSelectMedia = ( selectedMedia ) => {
 		setAttributes( { media: selectedMedia } );
@@ -32,11 +31,11 @@ export default function Edit( { attributes, setAttributes } ) {
 		setAttributes( { media: {}, generatedHTML: null } );
 	};
 
-	useEffect(() => {
-		if (isModalOpen) {
-			setIsLoading(true);
-			setTimeout(() => {
-				const htmlString = `<table>
+	const generateHTML = () => {
+		setTemporaryHTML(null);
+		setIsLoading(true);
+		setTimeout(() => {
+			const htmlString = `<table>
   <tr>
     <th>Header 1</th>
     <th>Header 2</th>
@@ -46,11 +45,10 @@ export default function Edit( { attributes, setAttributes } ) {
     <td>Data 2</td>
   </tr>
 </table>`;
-				setTableHTML(htmlString);
-				setIsLoading(false);
-			}, 2000);
-		}
-	}, [isModalOpen]);
+			setTemporaryHTML(htmlString);
+			setIsLoading(false);
+		}, 2000);
+	};
 
 	return (
 		<div {...useBlockProps()}>
@@ -113,42 +111,27 @@ export default function Edit( { attributes, setAttributes } ) {
 					</div>
 				)}
 				<Button
-					onClick={() => setIsModalOpen(true)}
-					variant="primary"
-					className="large-button"
+					onClick={() => generateHTML()}
+					variant="secondary"
+					className={isLoading ? 'large-button is-busy' : 'large-button'}
 					disabled={!media || Object.keys(media).length === 0}
 				>
-					{__( 'Create Accessible Alternative', 'visua11y-infographic' )}
+					{(
+						temporaryHTML
+						? __( 'Regenerate', 'visua11y-infographic' )
+						: (
+							isLoading
+							? __( 'Generating...', 'visua11y-infographic' )
+							: __( 'Generate Accessible Alternative', 'visua11y-infographic' )
+						)
+					)}
 				</Button>
+				{temporaryHTML && (
+					<div className="output-container">
+						<div dangerouslySetInnerHTML={{ __html: temporaryHTML }} />
+					</div>
+				)}
 			</Placeholder>
-
-			{isModalOpen && (
-				<Modal
-					title={__( 'Create an accessible alternative', 'visua11y-infographic' )}
-					onRequestClose={() => setIsModalOpen( false )}
-					shouldCloseOnEsc={true}
-					shouldCloseOnClickOutside={true}
-					className="is-fullscreen"
-				>
-						<div className="modal-content-wrapper">
-							<div className="modal-left-side">
-								<img src={media.url} alt={__( 'Selected Media', 'visua11y-infographic' )} style={{ maxWidth: '100%', maxHeight: '500px' }} />
-							</div>
-							<div className="modal-right-side">
-								{isLoading ? (
-									<div className="loader">Loading...</div>
-								) : (
-									<pre>{tableHTML}</pre>
-								)}
-							</div>
-							<div className="modal-bottom-bar">
-								<Button onClick={() => setIsModalOpen( false )} variant="primary" disabled>
-									{__( 'Save', 'visua11y-infographic' )}
-								</Button>
-							</div>
-						</div>
-				</Modal>
-			)}
 		</div>
 	);
 }
