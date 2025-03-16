@@ -21,5 +21,5 @@
  */
 
 /* eslint-disable no-console */
-console.log( 'Hello World! (from create-block-visua11y-infographics block)' );
+console.log( 'Hello World! (from create-block-visua11y-infographic block)' );
 /* eslint-enable no-console */

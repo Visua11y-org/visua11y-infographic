@@ -1,11 +1,11 @@
-# Visua11y Wizard
+# Visua11y Infographic
 
 ## Description
-Visua11y Wizard is a WordPress block plugin that allows users to create accessible infographics by simply uploading an image.
+Visua11y Infographic is a WordPress block plugin that allows users to create accessible infographics by simply uploading an image.
 
 ## Installation
 
-1. Upload the `visua11y-wizard` folder to the `/wp-content/plugins/` directory.
+1. Upload the `visua11y-infographic` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
 3. Use the new block in the WordPress editor.
 
@@ -17,7 +17,7 @@ To set up the development environment:
 2. Navigate to the plugin folder:
 
    ```sh
-   cd visua11y-wizard
+   cd visua11y-infographic
    ```
 
 3. Install dependencies:
