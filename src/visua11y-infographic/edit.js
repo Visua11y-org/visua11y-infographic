@@ -13,7 +13,8 @@ import {
 	chartBar,
 	ToolbarGroup,
 	ToolbarButton,
-	ToolbarItem
+	ToolbarItem,
+	SelectControl
 } from '@wordpress/components';
 import { edit, trash } from '@wordpress/icons';
 import './editor.scss';
@@ -22,6 +23,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const { media, generatedHTML } = attributes;
 	const [ isLoading, setIsLoading ] = useState(false);
 	const [ temporaryHTML, setTemporaryHTML ] = useState(null);
+	const [ alternativeType, setAlternativeType ] = useState('table-and-description');
 
 	const onSelectMedia = ( selectedMedia ) => {
 		setAttributes( { media: selectedMedia } );
@@ -31,7 +33,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		setAttributes( { media: {}, generatedHTML: null } );
 	};
 
-	const generateHTML = () => {
+	const generateHTML = ( args ) => {
 		setTemporaryHTML(null);
 		setIsLoading(true);
 		setTimeout(() => {
@@ -45,6 +47,9 @@ export default function Edit( { attributes, setAttributes } ) {
     <td>Data 2</td>
   </tr>
 </table>`;
+			/**
+			 * @todo use alternativeType to generate the HTML
+			 */
 			setTemporaryHTML(htmlString);
 			setIsLoading(false);
 		}, 2000);
@@ -110,8 +115,19 @@ export default function Edit( { attributes, setAttributes } ) {
 						{/* Image is displayed as background */}
 					</div>
 				)}
+				<SelectControl
+					label={__('Type of alternative', 'visua11y-infographic')}
+					value={alternativeType}
+					options={[
+						{ label: __('Table and Description', 'visua11y-infographic'), value: 'table-and-description' },
+						{ label: __('Just description', 'visua11y-infographic'), value: 'description' },
+						{ label: __('Just table', 'visua11y-infographic'), value: 'table' },
+					]}
+					onChange={(value) => setAlternativeType(value)}
+					help={__('What kind of format should the alternative have', 'visua11y-infographic')}
+				/>
 				<Button
-					onClick={() => generateHTML()}
+					onClick={() => generateHTML({ alternativeType: alternativeType })}
 					variant="secondary"
 					className={isLoading ? 'large-button is-busy' : 'large-button'}
 					disabled={!media || Object.keys(media).length === 0}
