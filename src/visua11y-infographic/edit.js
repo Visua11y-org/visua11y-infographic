@@ -132,7 +132,7 @@ export default function Edit( { attributes, setAttributes } ) {
 				>
 						<div className="modal-content-wrapper">
 							<div className="modal-left-side">
-								<img src={media.url} alt={__( 'Selected Media', 'visua11y-infographic' )} style={{ maxWidth: '80%', maxHeight: '300px' }} />
+								<img src={media.url} alt={__( 'Selected Media', 'visua11y-infographic' )} style={{ maxWidth: '100%', maxHeight: '500px' }} />
 							</div>
 							<div className="modal-right-side">
 								{isLoading ? (
