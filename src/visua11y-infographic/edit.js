@@ -40,14 +40,13 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 	const [ includeSummary, setIncludeSummary ] = useState( true );
 	const [ includeDataTable, setIncludeDataTable ] = useState( true );
 	const [ includeContext, setIncludeContext ] = useState( true );
-	const [ outputFormat, setOutputFormat ] = useState( 'details-below-image' );
+	const [ outputFormat, setOutputFormat ] = useState( 'directly-below-image' );
 
 	// hooks
 	const { replaceInnerBlocks } = dispatch( "core/block-editor" );
 	const { innerBlocks } = useSelect( select => ( {
 		innerBlocks: select( "core/block-editor" ).getBlocks( clientId )
 	} ) );
-	const hasInnerBlocks = ! isEmpty( innerBlocks );
 
 	/**
 	 * Remove all inner blocks from the block
@@ -148,15 +147,15 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 			// generate html
 			let generatedHTML = '';
 			if ( summary ) {
-				generatedHTML += `<h3 id="${summaryAnchor}">${ __( 'Summary', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += `<h3>${ __( 'Summary', 'visua11y-infographic' ) }</h3>`;
 				generatedHTML += summary;
 			}
 			if ( values ) {
-				generatedHTML += `<h3 id="${valuesAnchor}">${ __( 'Values', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += `<h3>${ __( 'Values', 'visua11y-infographic' ) }</h3>`;
 				generatedHTML += values;
 			}
 			if ( context ) {
-				generatedHTML += `<h3 id="${contextAnchor}">${ __( 'Context', 'visua11y-infographic' ) }</h3>`;
+				generatedHTML += `<h3>${ __( 'Context', 'visua11y-infographic' ) }</h3>`;
 				generatedHTML += context;
 			}
 
@@ -188,7 +187,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 	/**
 	 * Insert the generated blocks into the editor and remove this block
 	 */
-	const insertBlocks = ( inner, options ) => {
+	const insertBlocks = ( options ) => {
 
 		const { includeImage, includeSummary, includeDataTable, includeContext } = options;
 		const anchor = generateAnchor();
@@ -367,14 +366,14 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 							label={__( 'Output Format', 'visua11y-infographic' )}
 							value={outputFormat}
 							options={[
-								{ label: __( 'Alternative inside details below the image', 'visua11y-infographic' ), value: 'details-below-image' },
 								{ label: __( 'Alternative directly below image', 'visua11y-infographic' ), value: 'directly-below-image' },
+								{ label: __( 'Alternative inside details below the image', 'visua11y-infographic' ), value: 'details-below-image' },
 								{ label: __( 'Alternative next to the image', 'visua11y-infographic' ), value: 'next-to-image' }
 							]}
 							onChange={setOutputFormat}
 						/>
 						<Button
-							onClick={() => insertBlocks( innerBlocks, { includeImage, includeSummary, includeDataTable, includeContext } )}
+							onClick={() => insertBlocks( { includeImage, includeSummary, includeDataTable, includeContext } )}
 							variant="primary"
 							className="large-button"
 						>
