@@ -49,7 +49,8 @@
 .modal-content-wrapper {
 	display: grid;
 	grid-template-rows: 1fr auto;
-	grid-template-columns: 1fr 2fr;
+	grid-template-columns: 400px 1fr;
+	gap: 20px;
 	height: 100%;
 	align-items: center;
 	justify-items: center;
@@ -57,12 +58,20 @@
 
 .modal-left-side {
 	grid-row: 1 / 2;
-	grid-column: 1 / 2;
+	grid-column: 1;
 }
 
 .modal-right-side {
 	grid-row: 1 / 2;
-	grid-column: 2 / 3;
+	grid-column: 2;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: stretch;
+	background: rgba(0,0,0,.07);
+	padding: 1em;
+	border-radius: 4px;
+	font-family: monospace;
 }
 
 .modal-bottom-bar {
@@ -71,11 +80,4 @@
 	width: 100%;
 	text-align: right;
 	// padding: 20px;
-}
-
-.modal-content-wrapper pre {
-	background: rgba(0,0,0,.07);
-	padding: 1em;
-	border-radius: 4px;
-	font-family: monospace;
 }
