@@ -3,7 +3,7 @@ import { useBlockProps, BlockControls, InnerBlocks } from '@wordpress/block-edit
 import { useState, useEffect } from '@wordpress/element';
 import { rawHandler } from '@wordpress/blocks';
 import { getMarkup } from './lib/getMarkup';
-import { blocksToTemplate, innerBlocksToTemplate } from './lib/blocksToTemplate';
+import { blocksToTemplate } from './lib/blocksToTemplate';
 import {
 	MediaUpload,
 	MediaUploadCheck
