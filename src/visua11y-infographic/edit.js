@@ -1,6 +1,9 @@
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, BlockControls } from '@wordpress/block-editor';
+import { useBlockProps, BlockControls, InnerBlocks } from '@wordpress/block-editor';
 import { useState, useEffect } from '@wordpress/element';
+import { rawHandler } from '@wordpress/blocks';
+import { getMarkup } from './lib/getMarkup';
+import { blocksToTemplate, innerBlocksToTemplate } from './lib/blocksToTemplate';
 import {
 	MediaUpload,
 	MediaUploadCheck
@@ -23,6 +26,8 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ isModalOpen, setIsModalOpen ] = useState( false );
 	const [isLoading, setIsLoading] = useState(false);
 	const [tableHTML, setTableHTML] = useState('');
+	const blocks = rawHandler({ HTML: getMarkup() })
+	const blocksTemplate = blocksToTemplate(blocks);
 
 	const onSelectMedia = ( selectedMedia ) => {
 		setAttributes( { media: selectedMedia } );
@@ -36,17 +41,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		if (isModalOpen) {
 			setIsLoading(true);
 			setTimeout(() => {
-				const htmlString = `<table>
-  <tr>
-    <th>Header 1</th>
-    <th>Header 2</th>
-  </tr>
-  <tr>
-    <td>Data 1</td>
-    <td>Data 2</td>
-  </tr>
-</table>`;
-				setTableHTML(htmlString);
+				setTableHTML(getMarkup());
 				setIsLoading(false);
 			}, 2000);
 		}
@@ -112,6 +107,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						{/* Image is displayed as background */}
 					</div>
 				)}
+				<InnerBlocks template={blocksTemplate} />
 				<Button
 					onClick={() => setIsModalOpen(true)}
 					variant="primary"
