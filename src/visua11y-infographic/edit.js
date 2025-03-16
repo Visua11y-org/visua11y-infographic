@@ -22,13 +22,25 @@ import {
 } from '@wordpress/components';
 import './editor.scss';
 
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { clientId, attributes, setAttributes } ) {
+
 	const { media, generatedHTML } = attributes;
 	const [ isLoading, setIsLoading ] = useState( false );
 	const [ blockTemplate, setBlockTemplate ] = useState( null );
 	const [ alternativeType, setAlternativeType ] = useState( 'table-and-description' );
 
+	const { replaceInnerBlocks } = wp.data.dispatch("core/block-editor");
+	const { innerBlocks } = wp.data.useSelect(select => ({
+		innerBlocks: select("core/block-editor").getBlocks(clientId)
+	}));
+
+	const removeInnerBlocks = () => {
+		setBlockTemplate( null );
+		replaceInnerBlocks( clientId, [] );
+	};
+
 	const onSelectMedia = ( selectedMedia ) => {
+		removeInnerBlocks();
 		setAttributes( {
 			media: {
 				id: selectedMedia.id,
@@ -38,14 +50,14 @@ export default function Edit( { attributes, setAttributes } ) {
 	};
 
 	const onRemoveMedia = () => {
-		setBlockTemplate( null );
+		removeInnerBlocks();
 		setAttributes( { media: {}, generatedHTML: null } );
 	};
 
 	const generateHTML = async ( args ) => {
-		setBlockTemplate( null );
 		setIsLoading( true );
 		setAttributes( { generatedHTML: null } );
+		removeInnerBlocks();
 
 		console.log( 'Generating HTML for:', media );
 
@@ -98,6 +110,9 @@ export default function Edit( { attributes, setAttributes } ) {
 			}
 
 			setAttributes( { generatedHTML: newHtml } );
+			const blocks = rawHandler( { HTML: generatedHTML } );
+			const template = blocksToTemplate( blocks );
+			setBlockTemplate( template );
 			showSnackbar(
 				__( 'Generated Accessible Alternative', 'visua11y-infographic' ),
 				{
@@ -118,28 +133,22 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 	};
 
-	if ( generatedHTML && !blockTemplate ) {
-		const blocks = rawHandler( { HTML: generatedHTML } );
-		const template = blocksToTemplate( blocks );
-		setBlockTemplate( template );
-	}
-
 	/**
 	 * @note This is not working, as the template is not valid for the createBlock function
 	 */
 	const insertBlocks = () => {
-		const template = [
-			[ 'core/group', {}, [
-				[ 'core/image', media ],
-				[ 'core/details', {}, [
-					...blockTemplate
-				] ]
-			] ]
-		];
-		// create a new block with the template
-		const newBlock = wp.blocks.createBlock( 'core/group', {}, template );
+
+		const imageBlock = wp.blocks.createBlock( 'core/image', media );
+		const detailsBlock = wp.blocks.createBlock( 'core/details', {
+			summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' )
+		}, innerBlocks );
+		const wrappedInnerBlocks = wp.blocks.createBlock( 'core/group', {}, [
+			imageBlock,
+			detailsBlock
+		] );
+
 		// insert the new block
-		wp.data.dispatch( 'core/editor' ).insertBlocks( newBlock );
+		wp.data.dispatch( 'core/editor' ).insertBlocks( wrappedInnerBlocks );
 	};
 
 	return (
@@ -229,13 +238,13 @@ export default function Edit( { attributes, setAttributes } ) {
 							)
 					)}
 				</Button>
-				{generatedHTML && blockTemplate && (
+				{generatedHTML && (
 					// <div className="output-container">
 					// 	<div dangerouslySetInnerHTML={{ __html: blockTemplate }} />
 					// </div>
 					<InnerBlocks template={blockTemplate} />
 				)}
-				{generatedHTML && blockTemplate && (
+				{generatedHTML && (
 					<Button
 						onClick={() => insertBlocks( blockTemplate )}
 						variant="primary"
