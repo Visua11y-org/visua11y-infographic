@@ -25,10 +25,8 @@ import './editor.scss';
 export default function Edit( { attributes, setAttributes } ) {
 	const { media, generatedHTML } = attributes;
 	const [ isLoading, setIsLoading ] = useState(false);
-	const [ temporaryHTML, setTemporaryHTML ] = useState(null);
+	const [ blockTemplate, setBlockTemplate ] = useState(null);
 	const [ alternativeType, setAlternativeType ] = useState('table-and-description');
-	const blocks = rawHandler({ HTML: getMarkup() })
-	const blocksTemplate = blocksToTemplate(blocks);
 
 	const onSelectMedia = ( selectedMedia ) => {
 		setAttributes( { media: selectedMedia } );
@@ -38,16 +36,53 @@ export default function Edit( { attributes, setAttributes } ) {
 		setAttributes( { media: {}, generatedHTML: null } );
 	};
 
-	const generateHTML = ( args ) => {
-		setTemporaryHTML(null);
+	const generateHTML = async ( args ) => {
+		setBlockTemplate(null);
 		setIsLoading(true);
-		setTimeout(() => {
+
+		console.log('Generating HTML for:', media);
+
+		const requestBody = {
+			image: media.url,
+			response_type: 'html'
+		};
+
+		try {
+			const response = await fetch('https://wordpress-1111654-5343094.cloudwaysapps.com/wp-json/accessible-infographic/v1/analyze/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					// 'X-API-Key': 'v11y_api_7f3d8b2e4a6c9f1d5e0b7a2c4d6e8f0a'
+				},
+				body: JSON.stringify(requestBody)
+			});
+
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+
+			const data = await response.json();
+			console.log('raw data:', data);
+
+			let newHtml = '';
+			if (args.alternativeType === 'table-and-description') {
+				newHtml = data.summary + data.values;
+			} else if (args.alternativeType === 'description') {
+				newHtml = data.summary;
+			} else if (args.alternativeType === 'table') {
+				newHtml = data.values;
+			}
+
+			const blocks = rawHandler({ HTML: newHtml });
+			setBlockTemplate( blocksToTemplate(blocks) );
+		} catch (error) {
+			console.error('Error generating HTML:', error);
 			/**
-			 * @todo use alternativeType to generate the HTML
+			 * @todo Show error message to the user
 			 */
-			setTemporaryHTML(getMarkup());
+		} finally {
 			setIsLoading(false);
-		}, 2000);
+		}
 	};
 
 	return (
@@ -128,7 +163,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					disabled={!media || Object.keys(media).length === 0}
 				>
 					{(
-						temporaryHTML
+						blockTemplate
 						? __( 'Regenerate', 'visua11y-infographic' )
 						: (
 							isLoading
@@ -137,11 +172,11 @@ export default function Edit( { attributes, setAttributes } ) {
 						)
 					)}
 				</Button>
-				{temporaryHTML && (
+				{blockTemplate && (
 					// <div className="output-container">
-					// 	<div dangerouslySetInnerHTML={{ __html: temporaryHTML }} />
+					// 	<div dangerouslySetInnerHTML={{ __html: blockTemplate }} />
 					// </div>
-					<InnerBlocks template={blocksTemplate} />
+					<InnerBlocks template={blockTemplate} />
 				)}
 			</Placeholder>
 		</div>
