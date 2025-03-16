@@ -3,6 +3,7 @@ import { useBlockProps, BlockControls, InnerBlocks } from '@wordpress/block-edit
 import { useState, useEffect } from '@wordpress/element';
 import { rawHandler } from '@wordpress/blocks';
 import { getMarkup } from './lib/getMarkup';
+import { showSnackbar } from './lib/showSnackbar';
 import { blocksToTemplate } from './lib/blocksToTemplate';
 import {
 	MediaUpload,
@@ -23,23 +24,30 @@ import './editor.scss';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { media, generatedHTML } = attributes;
-	const [ isLoading, setIsLoading ] = useState(false);
-	const [ blockTemplate, setBlockTemplate ] = useState(null);
-	const [ alternativeType, setAlternativeType ] = useState('table-and-description');
+	const [ isLoading, setIsLoading ] = useState( false );
+	const [ blockTemplate, setBlockTemplate ] = useState( null );
+	const [ alternativeType, setAlternativeType ] = useState( 'table-and-description' );
 
 	const onSelectMedia = ( selectedMedia ) => {
-		setAttributes( { media: selectedMedia } );
+		setAttributes( {
+			media: {
+				id: selectedMedia.id,
+				url: selectedMedia.url
+			}
+		} );
 	};
 
 	const onRemoveMedia = () => {
+		setBlockTemplate( null );
 		setAttributes( { media: {}, generatedHTML: null } );
 	};
 
 	const generateHTML = async ( args ) => {
-		setBlockTemplate(null);
-		setIsLoading(true);
+		setBlockTemplate( null );
+		setIsLoading( true );
+		setAttributes( { generatedHTML: null } );
 
-		console.log('Generating HTML for:', media);
+		console.log( 'Generating HTML for:', media );
 
 		const requestBody = {
 			image: media.url,
@@ -47,42 +55,74 @@ export default function Edit( { attributes, setAttributes } ) {
 		};
 
 		try {
-			const response = await fetch('https://wordpress-1111654-5343094.cloudwaysapps.com/wp-json/accessible-infographic/v1/analyze/', {
+			const response = await fetch( 'https://wordpress-1111654-5343094.cloudwaysapps.com/wp-json/accessible-infographic/v1/analyze/', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					// 'X-API-Key': 'v11y_api_7f3d8b2e4a6c9f1d5e0b7a2c4d6e8f0a'
 				},
-				body: JSON.stringify(requestBody)
-			});
+				body: JSON.stringify( requestBody )
+			} );
 
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
+			if ( !response.ok ) {
+				// throw new Error( 'Network response was not ok' );
+				showSnackbar( __( 'Network response was not ok', 'visua11y-infographic' ), {
+					style: 'error',
+					isDismissible: true,
+					icon: '⚠️'
+				} );
+				return;
 			}
 
 			const data = await response.json();
-			console.log('raw data:', data);
+			console.log( 'raw data:', data );
+
+			if ( !data || !data.summary || !data.values ) {
+				if ( data && data?.message ) {
+					showSnackbar( data.message + __( ' Make sure the image url is publicly accessible.', 'visua11y-infographic' ), {
+						style: 'error',
+						isDismissible: true,
+						icon: '⚠️'
+					} );
+					return;
+				}
+			}
 
 			let newHtml = '';
-			if (args.alternativeType === 'table-and-description') {
+			if ( args.alternativeType === 'table-and-description' ) {
 				newHtml = data.summary + data.values;
-			} else if (args.alternativeType === 'description') {
+			} else if ( args.alternativeType === 'description' ) {
 				newHtml = data.summary;
-			} else if (args.alternativeType === 'table') {
+			} else if ( args.alternativeType === 'table' ) {
 				newHtml = data.values;
 			}
 
-			const blocks = rawHandler({ HTML: newHtml });
-			setBlockTemplate( blocksToTemplate(blocks) );
-		} catch (error) {
-			console.error('Error generating HTML:', error);
-			/**
-			 * @todo Show error message to the user
-			 */
+			setAttributes( { generatedHTML: newHtml } );
+			showSnackbar(
+				__( 'Generated Accessible Alternative', 'visua11y-infographic' ),
+				{
+					style: 'success',
+					isDismissible: true,
+					icon: '🎉'
+				}
+			);
+		} catch ( error ) {
+			console.error( 'Error generating HTML:', error );
+			showSnackbar( error.message, {
+				style: 'error',
+				isDismissible: true,
+				icon: '⚠️'
+			} );
 		} finally {
-			setIsLoading(false);
+			setIsLoading( false );
 		}
 	};
+
+	if ( generatedHTML && !blockTemplate ) {
+		const blocks = rawHandler( { HTML: generatedHTML } );
+		const template = blocksToTemplate( blocks );
+		setBlockTemplate( template );
+	}
 
 	/**
 	 * @note This is not working, as the template is not valid for the createBlock function
@@ -93,14 +133,14 @@ export default function Edit( { attributes, setAttributes } ) {
 				[ 'core/image', media ],
 				[ 'core/details', {}, [
 					...blockTemplate
-				]]
-			]]
+				] ]
+			] ]
 		];
 		// create a new block with the template
 		const newBlock = wp.blocks.createBlock( 'core/group', {}, template );
 		// insert the new block
 		wp.data.dispatch( 'core/editor' ).insertBlocks( newBlock );
-	}
+	};
 
 	return (
 		<div {...useBlockProps()}>
@@ -116,9 +156,9 @@ export default function Edit( { attributes, setAttributes } ) {
 										<ToolbarButton onClick={open} label={__( 'Change Media', 'visua11y-infographic' )}>
 											{/* <Icon icon={edit} /> */}
 											{
-												(media && Object.keys( media ).length !== 0)
-												? __( 'Change image', 'visua11y-infographic' )
-												: __( 'Select image', 'visua11y-infographic' )}
+												( media && Object.keys( media ).length !== 0 )
+													? __( 'Change image', 'visua11y-infographic' )
+													: __( 'Select image', 'visua11y-infographic' )}
 										</ToolbarButton>
 									)}
 								</ToolbarItem>
@@ -129,9 +169,9 @@ export default function Edit( { attributes, setAttributes } ) {
 					{media && Object.keys( media ).length !== 0 && (
 						<ToolbarItem>
 							{() => (
-								<ToolbarButton onClick={onRemoveMedia} label={__( 'Remove Media', 'visua11y-infographic' )} isDestructive>
+								<ToolbarButton onClick={onRemoveMedia} label={__( 'Remove image', 'visua11y-infographic' )} isDestructive>
 									{/* <Icon icon={trash} /> */}
-									{__( 'Remove', 'visua11y-infographic' )}
+									{__( 'Remove image', 'visua11y-infographic' )}
 								</ToolbarButton>
 							)}
 						</ToolbarItem>
@@ -163,41 +203,41 @@ export default function Edit( { attributes, setAttributes } ) {
 					</div>
 				)}
 				<SelectControl
-					label={__('Type of alternative', 'visua11y-infographic')}
+					label={__( 'Type of alternative', 'visua11y-infographic' )}
 					value={alternativeType}
 					options={[
-						{ label: __('Table and Description', 'visua11y-infographic'), value: 'table-and-description' },
-						{ label: __('Just description', 'visua11y-infographic'), value: 'description' },
-						{ label: __('Just table', 'visua11y-infographic'), value: 'table' },
+						{ label: __( 'Table and Description', 'visua11y-infographic' ), value: 'table-and-description' },
+						{ label: __( 'Just description', 'visua11y-infographic' ), value: 'description' },
+						{ label: __( 'Just table', 'visua11y-infographic' ), value: 'table' },
 					]}
-					onChange={(value) => setAlternativeType(value)}
-					help={__('What kind of format should the alternative have', 'visua11y-infographic')}
+					onChange={( value ) => setAlternativeType( value )}
+					help={__( 'What kind of format should the alternative have', 'visua11y-infographic' )}
 				/>
 				<Button
-					onClick={() => generateHTML({ alternativeType: alternativeType })}
+					onClick={() => generateHTML( { alternativeType: alternativeType } )}
 					variant="secondary"
 					className={isLoading ? 'large-button is-busy' : 'large-button'}
-					disabled={!media || Object.keys(media).length === 0}
+					disabled={!media || Object.keys( media ).length === 0}
 				>
 					{(
-						blockTemplate
-						? __( 'Regenerate', 'visua11y-infographic' )
-						: (
-							isLoading
-							? __( 'Generating...', 'visua11y-infographic' )
-							: __( 'Generate Accessible Alternative', 'visua11y-infographic' )
-						)
+						generatedHTML
+							? __( 'Regenerate', 'visua11y-infographic' )
+							: (
+								isLoading
+									? __( 'Generating...', 'visua11y-infographic' )
+									: __( 'Generate Accessible Alternative', 'visua11y-infographic' )
+							)
 					)}
 				</Button>
-				{blockTemplate && (
+				{generatedHTML && blockTemplate && (
 					// <div className="output-container">
 					// 	<div dangerouslySetInnerHTML={{ __html: blockTemplate }} />
 					// </div>
 					<InnerBlocks template={blockTemplate} />
 				)}
-				{blockTemplate && (
+				{generatedHTML && blockTemplate && (
 					<Button
-						onClick={() => insertBlocks(blockTemplate)}
+						onClick={() => insertBlocks( blockTemplate )}
 						variant="primary"
 						className="large-button"
 					>
