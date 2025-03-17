@@ -215,12 +215,12 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 
 		let wrappedInnerBlocks;
 		if (outputFormat === 'details-below-image') {
-			const detailsBlock = createBlock( 'core/details', {
-				summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' ),
+			const detailsBlock = createBlock( 'core/group', {
+				anchor: anchor
 			}, [
-				createBlock( 'core/group', {
-					anchor: anchor
-				}, detailsInnerBlocks)
+				createBlock( 'core/details', {
+					summary: __( 'Accessible alternative for the infographic', 'visua11y-infographic' ),
+				}, detailsInnerBlocks )
 			] );
 			blocks.push(detailsBlock);
 			wrappedInnerBlocks = createBlock( 'core/group', {}, blocks );
@@ -228,9 +228,14 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 		else if (outputFormat === 'directly-below-image') {
 			wrappedInnerBlocks = createBlock( 'core/group', {}, [
 				...blocks,
-				createBlock( 'core/group', {
-					anchor: anchor
-				}, detailsInnerBlocks)
+				createBlock( 'core/group', {}, [
+					createBlock( 'core/heading', {
+						level: 2,
+						content: __( 'Accessible alternative for the infographic', 'visua11y-infographic' ),
+						anchor: anchor
+					} ),
+					...detailsInnerBlocks
+				] )
 			] );
 		}
 		else if (outputFormat === 'next-to-image') {
@@ -239,9 +244,14 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 			}, [
 				createBlock( 'core/column', {}, blocks ),
 				createBlock( 'core/column', {}, [
-					createBlock( 'core/group', {
-						anchor: anchor
-					}, detailsInnerBlocks)
+					createBlock( 'core/group', {}, [
+						createBlock( 'core/heading', {
+							level: 2,
+							content: __( 'Accessible alternative for the infographic', 'visua11y-infographic' ),
+							anchor: anchor
+						} ),
+						...detailsInnerBlocks
+					] )
 				] )
 			] );
 		}
