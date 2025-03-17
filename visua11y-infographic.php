@@ -25,13 +25,22 @@ if (! defined('ABSPATH')) {
  *
  * @see https://developer.wordpress.org/reference/functions/register_block_type/
  */
+
+
 function create_block_visua11y_infographic_block_init()
 {
-	$block_types = array( 'visua11y-infographic' );
-	foreach ( $block_types as $block_type ) {
-		register_block_type( __DIR__ . "/build/{$block_type}" );
+	$block_types = array('visua11y-infographic');
+	foreach ($block_types as $block_type) {
+		register_block_type(__DIR__ . "/build/{$block_type}");
 	}
-	
+
+	$api_url = 'const visua11yInfographicApiURL = "' . (defined('VISUA11Y_API_URL') ? VISUA11Y_API_URL : 'xxx') . '";';
+	wp_add_inline_script(
+		'wp-blocks',
+		$api_url,
+		'after'
+	);
+
 	/**
 	 * Registering blocks using blocks-manifest.php file.
 	 * This is the recommended way to register blocks since WordPress 6.8.

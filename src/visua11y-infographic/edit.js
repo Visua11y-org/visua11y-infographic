@@ -79,11 +79,11 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 
 	/**
 	 * Generate the HTML for the accessible alternative using the API.
-	 * 
+	 *
 	 * @param {Object} args
 	 * @param {string} args.imageURL
 	 * @param {string} args.alternativeType
-	 * @returns 
+	 * @returns
 	 */
 	const generateHTML = async ( args ) => {
 
@@ -98,7 +98,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 		} = args;
 
 		try {
-			const response = await fetch( 'https://wordpress-1111654-5343094.cloudwaysapps.com/wp-json/accessible-infographic/v1/analyze/', {
+			const response = await fetch( visua11yInfographicApiURL, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 					 * @todo this leads to a CORS error on most sites
 					 * @todo we need to find a way to make this work
 					 */
-					// 'X-API-Key': 'v11y_api_7f3d8b2e4a6c9f1d5e0b7a2c4d6e8f0a'
+					// 'X-API-Key': '5e2bc10e-9735-4635-ad5e-ddae2b2d53fd'
 				},
 				body: JSON.stringify( {
 					image: imageURL,
