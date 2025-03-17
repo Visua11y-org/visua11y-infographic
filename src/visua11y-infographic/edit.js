@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, BlockControls, InnerBlocks } from '@wordpress/block-editor';
-import { useState, useEffect } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 import { rawHandler } from '@wordpress/blocks';
 import { showSnackbar } from './lib/showSnackbar';
 import { blocksToTemplate } from './lib/blocksToTemplate';
@@ -11,7 +11,6 @@ import {
 import {
 	Placeholder,
 	Button,
-	Modal,
 	Icon,
 	chartBar,
 	ToolbarGroup,
@@ -281,7 +280,6 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 						<ToolbarItem>
 							{() => (
 								<ToolbarButton onClick={onRemoveMedia} label={__( 'Remove image', 'visua11y-infographic' )} isDestructive>
-									{/* <Icon icon={trash} /> */}
 									{__( 'Remove image', 'visua11y-infographic' )}
 								</ToolbarButton>
 							)}
