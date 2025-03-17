@@ -80,11 +80,11 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 
 	/**
 	 * Generate the HTML for the accessible alternative using the API.
-	 * 
+	 *
 	 * @param {Object} args
 	 * @param {string} args.imageURL
 	 * @param {string} args.alternativeType
-	 * @returns 
+	 * @returns
 	 */
 	const generateHTML = async ( args ) => {
 
@@ -337,7 +337,7 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 						<LabeledSeparator label={__( 'Generated Alternative', 'visua11y-infographic' )} />
 						<InnerBlocks template={blockTemplate} />
 						<LabeledSeparator label={__( 'Insert', 'visua11y-infographic' )} />
-						
+
 						<CheckboxControl
 							label={__( 'Image', 'visua11y-infographic' )}
 							title={__( 'Include Image', 'visua11y-infographic' )}
