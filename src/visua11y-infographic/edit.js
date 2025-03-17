@@ -21,7 +21,7 @@ import {
 } from '@wordpress/components';
 import { dispatch, useSelect } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
-import { isEmpty } from 'lodash';
+import { isEmpty, template } from 'lodash';
 import LabeledSeparator from './LabeledSeparator';
 import generateAnchor from './lib/generateAnchor';
 import './editor.scss';
@@ -79,11 +79,11 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 
 	/**
 	 * Generate the HTML for the accessible alternative using the API.
-	 *
+	 * 
 	 * @param {Object} args
 	 * @param {string} args.imageURL
 	 * @param {string} args.alternativeType
-	 * @returns
+	 * @returns 
 	 */
 	const generateHTML = async ( args ) => {
 
@@ -144,25 +144,61 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 			const { summary, values, context } = data;
 
 			// generate html
-			let generatedHTML = '';
+			let [ summaryTemplate, valuesTemplate, contextTemplate ] = [ [], [], [] ];
 			if ( summary ) {
-				generatedHTML += `<h3>${ __( 'Summary', 'visua11y-infographic' ) }</h3>`;
-				generatedHTML += summary;
+				summaryTemplate = blocksToTemplate( rawHandler( { HTML: summary } ) );
 			}
 			if ( values ) {
-				generatedHTML += `<h3>${ __( 'Values', 'visua11y-infographic' ) }</h3>`;
-				generatedHTML += values;
+				valuesTemplate = blocksToTemplate( rawHandler( { HTML: values } ) );
 			}
 			if ( context ) {
-				generatedHTML += `<h3>${ __( 'Context', 'visua11y-infographic' ) }</h3>`;
-				generatedHTML += context;
+				contextTemplate = blocksToTemplate( rawHandler( { HTML: context } ) );
 			}
 
-			setBlockTemplate(
-				blocksToTemplate(
-					rawHandler( { HTML: generatedHTML } )
-				)
-			);
+			const templateMarkup = [
+				[ 'core/group', {
+					className: 'visua11y-infographic-summary',
+					lock: {
+						move: true,
+						remove: true
+					},
+					metadata:{
+						name: "Summary"
+					}
+				}, [
+					[ 'core/heading', { level: 3, content: __( 'Summary', 'visua11y-infographic' ) } ],
+					...summaryTemplate
+				] ],
+				[ 'core/group', {
+					className: 'visua11y-infographic-values',
+					lock: {
+						move: true,
+						remove: true
+					},
+					metadata:{
+						name: "Values"
+					}
+				}, [
+					[ 'core/heading', { level: 3, content: __( 'Values', 'visua11y-infographic' ) } ],
+					...valuesTemplate
+				] ],
+				[ 'core/group', {
+					className: 'visua11y-infographic-context',
+					lock: {
+						move: true,
+						remove: true
+					},
+					metadata:{
+						name: "Context"
+					}
+				}, [
+					[ 'core/heading', { level: 3, content: __( 'Context', 'visua11y-infographic' ) } ],
+					...contextTemplate
+				] ]
+			]
+
+			setBlockTemplate( templateMarkup );
+
 			showSnackbar(
 				__( 'Generated Accessible Alternative', 'visua11y-infographic' ),
 				{
@@ -201,16 +237,37 @@ export default function Edit( { clientId, attributes, setAttributes } ) {
 		}
 		const detailsInnerBlocks = [];
 		if (includeSummary) {
-			if (innerBlocks[0]) detailsInnerBlocks.push(innerBlocks[0]);
-			if (innerBlocks[1]) detailsInnerBlocks.push(innerBlocks[1]);
+			const summaryBlock = innerBlocks.find( block => block.name === 'core/group' && block.attributes.className === 'visua11y-infographic-summary' );
+
+			// get the inner blocks of the group block
+			const summaryInnerBlocks = summaryBlock?.innerBlocks;
+			if (summaryInnerBlocks) {
+				summaryInnerBlocks.forEach( block => {
+					detailsInnerBlocks.push( block );
+				} );
+			}
 		}
 		if (includeDataTable) {
-			if (innerBlocks[2]) detailsInnerBlocks.push(innerBlocks[2]);
-			if (innerBlocks[3]) detailsInnerBlocks.push(innerBlocks[3]);
+			const valuesBlock = innerBlocks.find( block => block.name === 'core/group' && block.attributes.className === 'visua11y-infographic-values' );
+
+			// get the inner blocks of the group block
+			const valuesInnerBlocks = valuesBlock?.innerBlocks;
+			if (valuesInnerBlocks) {
+				valuesInnerBlocks.forEach( block => {
+					detailsInnerBlocks.push( block );
+				} );
+			}
 		}
 		if (includeContext) {
-			if (innerBlocks[4]) detailsInnerBlocks.push(innerBlocks[4]);
-			if (innerBlocks[5]) detailsInnerBlocks.push(innerBlocks[5]);
+			const contextBlock = innerBlocks.find( block => block.name === 'core/group' && block.attributes.className === 'visua11y-infographic-context' );
+
+			// get the inner blocks of the group block
+			const contextInnerBlocks = contextBlock?.innerBlocks;
+			if (contextInnerBlocks) {
+				contextInnerBlocks.forEach( block => {
+					detailsInnerBlocks.push( block );
+				} );
+			}
 		}
 
 		let wrappedInnerBlocks;
